@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE suite SYSTEM "http://testng.org/testng-1.0.dtd">
+<suite name="Fravega Ecommerce Web Suite"
+       thread-count="1"
+       verbose="1"
+       parallel="methods"
+       data-provider-thread-count="1">
+
+    <listeners>
+        <listener class-name="com.fravega.utils.RetryListener"/>
+        <listener class-name="com.fravega.utils.TestsInterceptor"/>
+    </listeners>
+
+    <test name="Fravega Ecommerce Web Tests">
+        <packages>
+            <!-- Esto incluirá todos los tests bajo com.fravega y sub-paquetes -->
+            <package name="com.fravega.*"/>
+        </packages>
+    </test>
+</suite>
