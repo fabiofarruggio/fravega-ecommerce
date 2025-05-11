@@ -55,7 +55,6 @@ jobs:
           tags: ${{ steps.meta.outputs.tags }}
 
   test:
-    needs: [build]
     runs-on: ubuntu-latest
     env:
       GOREST_TOKEN: ${{ secrets.GOREST_TOKEN }}
@@ -64,10 +63,14 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v3
 
-      - name: Determine image tag
+      - name: Set image tag
         id: image
-        run: echo "tag=ghcr.io/${{ github.repository }}:main" >> $GITHUB_OUTPUT
-        if: github.event_name == 'workflow_dispatch'
+        run: |
+          if [[ "${{ github.event_name }}" == "workflow_dispatch" ]]; then
+            echo "tag=ghcr.io/${{ github.repository }}:main" >> $GITHUB_OUTPUT
+          else
+            echo "tag=${{ needs.build.outputs.image_tag }}" >> $GITHUB_OUTPUT
+          fi
 
       - name: Set test groups
         id: test_groups
@@ -81,8 +84,7 @@ jobs:
 
       - name: Pull image
         run: |
-          docker pull ${{ needs.build.outputs.image_tag || steps.image.outputs.tag }}
-        if: github.event_name == 'workflow_dispatch' || github.event_name == 'push'
+          docker pull ${{ steps.image.outputs.tag }}
 
       - name: Run tests in container
         run: |
@@ -90,13 +92,13 @@ jobs:
             docker run --rm \
               -e GOREST_TOKEN \
               -v ${{ github.workspace }}/output:/output \
-              ${{ needs.build.outputs.image_tag || steps.image.outputs.tag }} \
+              ${{ steps.image.outputs.tag }} \
               clean test -Dallure.results.directory=/output/allure-results
           else
             docker run --rm \
               -e GOREST_TOKEN \
               -v ${{ github.workspace }}/output:/output \
-              ${{ needs.build.outputs.image_tag || steps.image.outputs.tag }} \
+              ${{ steps.image.outputs.tag }} \
               clean test -Dgroups=${{ steps.test_groups.outputs.groups }} -Dallure.results.directory=/output/allure-results
           fi
         shell: bash
@@ -106,7 +108,7 @@ jobs:
           docker run --rm \
             --entrypoint sh \
             -v ${{ github.workspace }}/output:/output \
-            ${{ needs.build.outputs.image_tag || steps.image.outputs.tag }} \
+            ${{ steps.image.outputs.tag }} \
             -c "allure generate /output/allure-results --clean -o /output/allure-report --single-file"
 
       - name: Upload Allure results (raw)
