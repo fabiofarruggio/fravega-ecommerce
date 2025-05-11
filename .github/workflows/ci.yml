@@ -9,8 +9,6 @@ on:
       - 'src/main/**'
       - 'src/test/**'
       - '.github/workflows/**'
-  pull_request:
-    branches: [ main ]
   workflow_dispatch:
     inputs:
       test_group:
@@ -55,6 +53,7 @@ jobs:
           tags: ${{ steps.meta.outputs.tags }}
 
   test:
+    if: github.event_name == 'workflow_dispatch'
     runs-on: ubuntu-latest
     env:
       GOREST_TOKEN: ${{ secrets.GOREST_TOKEN }}
@@ -65,12 +64,7 @@ jobs:
 
       - name: Set image tag
         id: image
-        run: |
-          if [[ "${{ github.event_name }}" == "workflow_dispatch" ]]; then
-            echo "tag=ghcr.io/${{ github.repository }}:main" >> $GITHUB_OUTPUT
-          else
-            echo "tag=${{ needs.build.outputs.image_tag }}" >> $GITHUB_OUTPUT
-          fi
+        run: echo "tag=ghcr.io/${{ github.repository }}:main" >> $GITHUB_OUTPUT
 
       - name: Set test groups
         id: test_groups
@@ -80,15 +74,13 @@ jobs:
             frontend) echo "groups=frontend" >> $GITHUB_OUTPUT ;;
             *) echo "groups=all" >> $GITHUB_OUTPUT ;;
           esac
-        if: github.event_name == 'workflow_dispatch'
 
       - name: Pull image
-        run: |
-          docker pull ${{ steps.image.outputs.tag }}
+        run: docker pull ${{ steps.image.outputs.tag }}
 
       - name: Run tests in container
         run: |
-          if [[ "${{ steps.test_groups.outputs.groups }}" == "all" || "${{ github.event_name }}" == "push" ]]; then
+          if [[ "${{ steps.test_groups.outputs.groups }}" == "all" ]]; then
             docker run --rm \
               -e GOREST_TOKEN \
               -v ${{ github.workspace }}/output:/output \
@@ -125,6 +117,7 @@ jobs:
 
   pages:
     needs: test
+    if: github.event_name == 'workflow_dispatch' && always()
     runs-on: ubuntu-latest
 
     steps:
