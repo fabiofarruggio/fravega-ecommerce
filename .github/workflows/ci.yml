@@ -89,15 +89,15 @@ jobs:
           if [[ "${{ steps.test_groups.outputs.groups }}" == "all" || "${{ github.event_name }}" == "push" ]]; then
             docker run --rm \
               -e GOREST_TOKEN \
-              -v ${{ github.workspace }}/target:/usr/src/app/target \
+              -v ${{ github.workspace }}/output:/output \
               ${{ needs.build.outputs.image_tag || steps.image.outputs.tag }} \
-              clean test
+              clean test -Dallure.results.directory=/output/allure-results
           else
             docker run --rm \
               -e GOREST_TOKEN \
-              -v ${{ github.workspace }}/target:/usr/src/app/target \
+              -v ${{ github.workspace }}/output:/output \
               ${{ needs.build.outputs.image_tag || steps.image.outputs.tag }} \
-              clean test -Dgroups=${{ steps.test_groups.outputs.groups }}
+              clean test -Dgroups=${{ steps.test_groups.outputs.groups }} -Dallure.results.directory=/output/allure-results
           fi
         shell: bash
 
@@ -105,21 +105,21 @@ jobs:
         run: |
           docker run --rm \
             --entrypoint sh \
-            -v ${{ github.workspace }}/target:/usr/src/app/target \
+            -v ${{ github.workspace }}/output:/output \
             ${{ needs.build.outputs.image_tag || steps.image.outputs.tag }} \
-            -c "allure generate target/allure-results --clean -o target/allure-report --single-file"
+            -c "allure generate /output/allure-results --clean -o /output/allure-report --single-file"
 
       - name: Upload Allure results (raw)
         uses: actions/upload-artifact@v4
         with:
           name: allure-results
-          path: target/allure-results
+          path: output/allure-results
 
       - name: Upload Allure report (index.html only)
         uses: actions/upload-artifact@v4
         with:
           name: allure-report
-          path: target/allure-report/index.html
+          path: output/allure-report/index.html
 
   pages:
     needs: test
