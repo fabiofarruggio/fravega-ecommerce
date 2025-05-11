@@ -1,67 +1,44 @@
 # fravega-ecommerce
 
 **Objetivo**  
-Soportar la ejecución de tests funcionales de UI y de API en Kotlin, tanto en local como en cualquier entorno donde Frávega esté desplegado y sea accesible.  
-El framework combina Playwright para UI, RestAssured para API, TestNG como runner, Allure para reportes y Ktlint para estilo de código.
+Este repositorio contiene un framework robusto de automatización de pruebas funcionales para UI y APIs en Kotlin.  
+El propósito es asegurar la calidad de funcionalidades críticas en entornos accesibles, incluyendo producción.  
+Se utiliza Playwright para UI, RestAssured para APIs, TestNG como framework de ejecución, Allure para reportería y Ktlint para estilo de código.
 
 ---
 
-## Requisitos
+## 🔧 Requisitos
 
 - **Java 11**  
-  https://www.oracle.com/java/technologies/javase/jdk11-archive-downloads.html  
 - **Kotlin 1.6.21**  
 - **Maven 3.6+**  
-  https://maven.apache.org/download.cgi  
 - **Git**  
 - **Allure Command-Line**  
-  https://docs.qameta.io/allure/#_installing_a_commandline  
+- **Docker** (opcional, pero recomendado para CI y local)
 
-> ⚠️ Asegurate de tener la variable `JAVA_HOME` apuntando a tu JDK11 y de agregar Maven a tu `PATH`.  
+> ⚠️ Asegurate de tener `JAVA_HOME` correctamente configurado y `mvn` disponible en tu `PATH`.
 
 ---
 
-## Estructura del proyecto
+## 📁 Estructura del proyecto
 
 ```
 
 fravega-ecommerce/
-├── pom.xml
-├── Dockerfile
+├── pom.xml                         # Configuración del proyecto y dependencias
+├── Dockerfile                      # Imagen Docker basada en Playwright Java + Allure
 ├── src/
-│   ├── main/
-│   │   ├── kotlin/com/fravega/...        # helpers, clients, conf, pages, support, utils, model/api/validator…
-│   │   └── resources/
-│   │       └── properties/...            # hosts, endpoints, credenciales, etc.
-│   └── test/
-│       ├── kotlin/com/fravega/
-│       │   ├── frontend/                 # Playwright + TestNG UI tests
-│       │   │   ├── dataCreation/
-│       │   │   ├── e2e/
-│       │   │   ├── payments/
-│       │   │   └── productionTests/
-│       │   └── backend/                  # RestAssured API tests
-│       └── resources/
-│           ├── fravega-qa-suite.xml      # suite TestNG
-│           ├── log4j.properties
-│           └── logback-test.xml
+│   ├── main/kotlin/com/fravega/    # Código productivo: clients, helpers, conf, pages, utils, etc.
+│   ├── main/resources/properties/  # Configuración productiva
+│   ├── test/kotlin/com/fravega/    # Casos de prueba de UI y API
+│   └── test/resources/             # Suite TestNG, logs y configuración de pruebas
 └── README.md
 
 ````
 
 ---
 
-## Configuración de propiedades
-
-En `src/main/resources/properties/` definís los distintos ambientes (por ejemplo: desarrollo, prueba, producción), endpoints, credenciales, etc.  
-
-Al ejecutar, pasás la propiedad `-Denvironment` para apuntar al archivo `properties.{environment}.yml` o `.properties` que corresponda.
-
----
-
-## Ejecución de tests
-
-Orquestación vía Maven/Surefire + TestNG:
+## ▶️ Ejecución local de tests
 
 ```bash
 mvn clean test \
@@ -70,68 +47,120 @@ mvn clean test \
   -Dheadless=false
 ````
 
-* **groups**: grupos de TestNG a incluir (`e2e`, `smoke`, `productionTests`, etc.).
-* **excludedGroups**: opcional, para excluir tests.
-* **headless**: ejecuta Playwright en modo headless (`true` o `false`).
+### Parámetros comunes:
+
+* `groups`: TestNG tags a ejecutar (`e2e`, `smoke`, `frontend`, `backend`, etc.)
+* `excludedGroups`: excluir grupos de tests si es necesario
+* `headless`: ejecuta Playwright sin UI (por defecto `true` en CI)
+
+> En esta demo se apunta directamente a producción, sin necesidad de configurar múltiples entornos.
 
 ---
 
-## Reportes Allure
+## 📊 Reportes Allure (modo local)
 
-1. Ejecutás los tests como arriba.
+1. Ejecutar los tests
 
-2. Generás el reporte:
+2. Generar el reporte:
 
    ```bash
    allure generate target/allure-results --clean -o target/allure-report --single-file
    ```
 
-3. Abrís `report/index.html` en tu navegador.
+3. Abrir:
+
+   ```bash
+   target/allure-report/index.html
+   ```
 
 ---
 
-## Docker
+## ⚙️ CI/CD en GitHub Actions
 
-1. **Build**
+Este proyecto se integra con GitHub Actions para CI/CD automático. El flujo está dividido en 3 etapas:
 
-   ```bash
-   docker build -t your-registry.com/fravega-ecommerce:latest .
-   ```
-2. **Push** (previo `docker login`)
+### 1. `build`
 
-   ```bash
-   docker push your-registry.com/fravega-ecommerce:latest
-   ```
-3. **Pull**
+* Se ejecuta solo ante cambios relevantes (`Dockerfile`, `src`, `pom.xml`, etc.).
+* Construye y sube la imagen Docker a GHCR (GitHub Container Registry).
 
-   ```bash
-   docker pull your-registry.com/fravega-ecommerce:latest
-   ```
+### 2. `test`
 
-En tu pipeline de CI podés usar este contenedor o replicar los pasos del `Dockerfile` directamente.
+* Ejecuta los tests funcionales dentro del contenedor publicado.
+* Soporta ejecución manual desde GitHub con selección de grupo de tests.
 
----
+### 3. `pages`
 
-## Check de estilo con Ktlint
+* Genera y publica el reporte de Allure en GitHub Pages.
 
-* **Ver errores**
-
-  ```bash
-  mvn antrun:run@ktlint
-  ```
-* **Auto-formatear**
-
-  ```bash
-  mvn antrun:run@ktlint-format
-  ```
+🔗 **Último reporte Allure publicado:**
+[https://fabiofarruggio.github.io/fravega-ecommerce](https://fabiofarruggio.github.io/fravega-ecommerce)
 
 ---
 
-## Clonar repositorio
+## 🚀 Ejecutar workflow manualmente desde GitHub
+
+Podés correr los tests desde la pestaña **Actions** del repositorio seleccionando el workflow `CI & Pages` y presionando "Run workflow".
+
+### Parámetro disponible:
+
+* `test_group`: grupo de tests a ejecutar (`all`, `frontend`, `backend`)
+
+### Comportamiento:
+
+| test\_group | Maven ejecutado                    |
+| ----------- | ---------------------------------- |
+| `all`       | `mvn clean test`                   |
+| `frontend`  | `mvn clean test -Dgroups=frontend` |
+| `backend`   | `mvn clean test -Dgroups=backend`  |
+
+---
+
+## 🐳 Docker (ejecución manual/local)
+
+### 1. Construir imagen localmente
+
+```bash
+docker build -t ghcr.io/<tu-usuario>/<repo>:latest .
+```
+
+### 2. Login y push al registry
+
+```bash
+echo $GITHUB_TOKEN | docker login ghcr.io -u <tu-usuario> --password-stdin
+docker push ghcr.io/<tu-usuario>/<repo>:latest
+```
+
+### 3. Ejecutar los tests
+
+```bash
+docker run --rm \
+  -e GOREST_TOKEN=<token> \
+  -v $(pwd)/target:/usr/src/app/target \
+  ghcr.io/<tu-usuario>/<repo>:latest clean test -Dgroups=frontend
+```
+
+---
+
+## ✨ Check de estilo con Ktlint
+
+### Ver errores de formato
+
+```bash
+mvn antrun:run@ktlint
+```
+
+### Autoformatear
+
+```bash
+mvn antrun:run@ktlint-format
+```
+
+---
+
+## 📥 Clonar el repositorio
 
 ```bash
 git clone https://github.com/fabiofarruggio/fravega-ecommerce
-```
-
-```
+cd fravega-ecommerce
 ```

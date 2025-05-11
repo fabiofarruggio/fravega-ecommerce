@@ -11,4 +11,5 @@ RUN apt-get update && apt-get install -y wget unzip \
 
 RUN mvn clean compile -DskipTests
 
-ENTRYPOINT ["mvn", "test"]
+ENTRYPOINT ["mvn"]
+CMD ["test"]
