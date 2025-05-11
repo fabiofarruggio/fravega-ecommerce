@@ -1,4 +1,3 @@
-# .github/workflows/ci.yml
 name: CI & Pages
 
 on:
@@ -57,7 +56,7 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v3
 
-      - name: Download single‐file Allure report
+      - name: Download single-file Allure report
         uses: actions/download-artifact@v3
         with:
           name: allure-report
@@ -65,7 +64,6 @@ jobs:
 
       - name: Prepare Pages content
         run: |
-          # mover index.html a la carpeta raíz de publicación
           mkdir -p ./.publish
           mv report/index.html ./.publish/index.html
 
